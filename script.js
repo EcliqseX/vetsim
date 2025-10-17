@@ -1,6 +1,6 @@
-// Simple Vet Clinic Simulator
-// Core logic for customers, diseases, tests, diagnosis, scoring
+// Simple Vet Clinic Simulator (updated: more robust button handling & feedback)
 
+// Core DOM refs
 const DOM = {
   money: document.getElementById('money'),
   reputation: document.getElementById('reputation'),
@@ -26,7 +26,7 @@ let state = {
   diagnosisOptions: []
 };
 
-// Define diseases with symptoms and how tests respond
+// Disease and test definitions (unchanged)
 const DISEASES = [
   {
     id: 'parvo',
@@ -97,7 +97,6 @@ const DISEASES = [
   }
 ];
 
-// Tests definitions: cost and which test key maps
 const TESTS = {
   blood: {cost: 20, name: 'Blood Test', key: 'blood'},
   stool: {cost: 15, name: 'Stool Test', key: 'stool'},
@@ -107,6 +106,7 @@ const TESTS = {
   urine: {cost: 18, name: 'Urine Analysis', key: 'urine'}
 };
 
+// ---------- initialization ----------
 function init() {
   state.diseases = DISEASES;
   populateDiagnosisOptions();
@@ -117,22 +117,61 @@ function init() {
 }
 
 function bindEvents() {
-  DOM.nextBtn.addEventListener('click', () => {
-    callNextCustomer();
-  });
+  if (DOM.nextBtn) {
+    DOM.nextBtn.addEventListener('click', () => {
+      try {
+        callNextCustomer();
+      } catch (err) {
+        console.error('Error while calling next customer:', err);
+        showFeedback('An error occurred while calling the next customer.', 'bad');
+      }
+    });
+  }
 
+  // Use currentTarget to avoid missing clicks when inner nodes exist
   document.querySelectorAll('.testBtn').forEach(btn=>{
     btn.addEventListener('click', (e)=>{
-      const test = e.target.dataset.test;
-      runTest(test);
+      try {
+        const test = e.currentTarget && e.currentTarget.dataset ? e.currentTarget.dataset.test : null;
+        if (!test) {
+          console.warn('Clicked a test button with no data-test attribute', e.currentTarget);
+          showFeedback('Test unavailable.', 'bad');
+          return;
+        }
+        runTest(test);
+      } catch (err) {
+        console.error('Error running test:', err);
+        showFeedback('An error occurred running the test.', 'bad');
+      }
     });
   });
 
-  DOM.diagnoseBtn.addEventListener('click', submitDiagnosis);
+  if (DOM.diagnoseBtn) {
+    DOM.diagnoseBtn.addEventListener('click', ()=>{
+      try {
+        submitDiagnosis();
+      } catch (err) {
+        console.error('Error on diagnose:', err);
+        showFeedback('An error occurred during diagnosis.', 'bad');
+      }
+    });
+  }
+}
+
+// ---------- UI helpers ----------
+function showFeedback(msg, type = 'neutral') {
+  if(!DOM.feedback) return;
+  DOM.feedback.textContent = msg;
+  DOM.feedback.className = 'feedback';
+  if(type === 'good') DOM.feedback.classList.add('good');
+  if(type === 'bad') DOM.feedback.classList.add('bad');
 }
 
 function populateDiagnosisOptions() {
   const select = DOM.diagnosisSelect;
+  if(!select) return;
+  // clear prior options except first placeholder
+  select.innerHTML = '<option value="">-- Select diagnosis --</option>';
   state.diseases.forEach(d=>{
     const opt = document.createElement('option');
     opt.value = d.id;
@@ -141,6 +180,7 @@ function populateDiagnosisOptions() {
   });
 }
 
+// ---------- waiting & customers ----------
 function seedWaitingRoom(n) {
   for(let i=0;i<n;i++){
     state.waiting.push(generateCustomer());
@@ -151,12 +191,10 @@ function seedWaitingRoom(n) {
 function generateCustomer() {
   const petTypes = ['Dog','Cat','Rabbit'];
   const petType = petTypes[rand(0,petTypes.length-1)];
-  // Choose a disease compatible with pet type (if none, pick one)
   const possible = state.diseases.filter(d => d.petTypes.includes(petType) || d.petTypes.length===0);
   const disease = possible[rand(0,possible.length-1)];
   const custNames = ['Alex','Jamie','Taylor','Jordan','Morgan','Casey','Riley','Sam','Charlie','Dana'];
   const petNames = ['Buddy','Mittens','Nibbles','Coco','Rex','Luna','Bella','Ollie','Simba','Daisy'];
-  // Observed symptoms: pick a few from disease and maybe add noise
   const observed = generateObservedSymptoms(disease);
   return {
     id: 'cust_' + Math.random().toString(36).slice(2,9),
@@ -171,17 +209,16 @@ function generateCustomer() {
 }
 
 function generateObservedSymptoms(disease) {
-  // pick 2-3 true symptoms and maybe add 0-2 irrelevant symptoms
   const numTrue = rand(2,3);
   const trueSymptoms = shuffleArray(disease.symptoms).slice(0,numTrue);
-  // possible noise from other diseases
   const otherSymptoms = state.diseases.flatMap(d=>d.symptoms).filter(s=>!trueSymptoms.includes(s));
-  const numNoise = Math.random() < 0.4 ? rand(0,2) : 0; // sometimes noise
+  const numNoise = Math.random() < 0.4 ? rand(0,2) : 0;
   const noise = shuffleArray(otherSymptoms).slice(0,numNoise);
   return shuffleArray([...trueSymptoms, ...noise]);
 }
 
 function renderWaiting() {
+  if(!DOM.waitingList) return;
   DOM.waitingList.innerHTML = '';
   state.waiting.forEach((c, idx)=>{
     const li = document.createElement('li');
@@ -192,7 +229,8 @@ function renderWaiting() {
 
 function callNextCustomer() {
   if(state.current) {
-    log("You still have a patient. Finish them before calling the next.");
+    showFeedback("You still have a patient. Finish them before calling the next.", 'bad');
+    log("Tried to call next while a patient is active.");
     return;
   }
   const next = state.waiting.shift();
@@ -206,6 +244,7 @@ function callNextCustomer() {
   renderWaiting();
 }
 
+// ---------- rendering current patient ----------
 function renderCurrent() {
   const c = state.current;
   if(!c){
@@ -214,8 +253,8 @@ function renderCurrent() {
     DOM.symptomList.innerHTML = '';
     DOM.testResults.innerHTML = '';
     DOM.treatmentOptions.innerHTML = '';
-    DOM.diagnosisSelect.value = '';
-    DOM.feedback.textContent = '';
+    if(DOM.diagnosisSelect) DOM.diagnosisSelect.value = '';
+    showFeedback('', 'neutral');
     return;
   }
   DOM.custName.textContent = `${c.owner} — ${c.petName}`;
@@ -228,9 +267,10 @@ function renderCurrent() {
   });
   DOM.testResults.innerHTML = '<em>No tests run yet.</em>';
   DOM.treatmentOptions.innerHTML = '';
-  DOM.diagnosisSelect.value = '';
-  DOM.feedback.textContent = '';
-  // Enable/disable tests based on pet type: for simplicity, all tests present but urine only for dog/cat
+  if(DOM.diagnosisSelect) DOM.diagnosisSelect.value = '';
+  showFeedback('', 'neutral');
+
+  // Enable/disable tests based on pet type: urine only for dog/cat
   document.querySelectorAll('.testBtn').forEach(btn=>{
     const t = btn.dataset.test;
     if(t === 'urine' && !['Dog','Cat'].includes(c.petType)){
@@ -241,42 +281,46 @@ function renderCurrent() {
   });
 }
 
+// ---------- tests ----------
 function runTest(testKey) {
   const c = state.current;
-  if(!c){ log("No current patient."); return; }
-  // Check enough money
+  if(!c){ log("No current patient."); showFeedback('No current patient to test.', 'bad'); return; }
   const testDef = TESTS[testKey] || {cost: 10, name: testKey};
   if(state.money < testDef.cost){
     log("Not enough money to run the test.");
+    showFeedback('Not enough money to run that test.', 'bad');
     return;
   }
-  state.money -= testDef.cost;
-  updateHUD();
 
-  // Determine if the test returns positive for the current disease (if disease defines this test)
-  let resultText = `Used ${testDef.name} (-$${testDef.cost}). `;
-  const disease = c.disease;
-  const testInfo = (disease.tests && disease.tests[testKey]) ? disease.tests[testKey] : null;
-  let positive = false;
-  if(testInfo){
-    // accuracy is testInfo.rate; can flip false positive/negative slightly
-    positive = Math.random() < testInfo.rate;
-  } else {
-    // random false positive small chance
-    positive = Math.random() < 0.08;
+  try {
+    state.money -= testDef.cost;
+    updateHUD();
+
+    let resultText = `Used ${testDef.name} (-$${testDef.cost}). `;
+    const disease = c.disease;
+    const testInfo = (disease.tests && disease.tests[testKey]) ? disease.tests[testKey] : null;
+    let positive = false;
+    if(testInfo){
+      positive = Math.random() < testInfo.rate;
+    } else {
+      positive = Math.random() < 0.08;
+    }
+
+    if(positive){
+      const text = testInfo && testInfo.positive ? testInfo.positive : `${testDef.name} abnormal`;
+      resultText += `Result: ${text}`;
+    } else {
+      resultText += `Result: No significant findings.`;
+    }
+
+    c.testsRun[testKey] = {positive, text: resultText, timestamp: Date.now()};
+    renderTestResults();
+    log(`${c.owner}'s ${c.petName}: ${testDef.name} run.`);
+    showFeedback(`Ran ${testDef.name}.`, 'neutral');
+  } catch (err) {
+    console.error('Exception in runTest:', err);
+    showFeedback('An error occurred while running the test.', 'bad');
   }
-
-  if(positive){
-    const text = testInfo && testInfo.positive ? testInfo.positive : `${testDef.name} abnormal`;
-    resultText += `<strong>Result: ${text}</strong>`;
-  } else {
-    resultText += `Result: No significant findings.`;
-  }
-
-  // Save test result
-  c.testsRun[testKey] = {positive, text: resultText, timestamp: Date.now()};
-  renderTestResults();
-  log(`${c.owner}'s ${c.petName}: ${testDef.name} run.`);
 }
 
 function renderTestResults() {
@@ -289,53 +333,57 @@ function renderTestResults() {
   DOM.testResults.innerHTML = parts.length ? parts.join('') : '<em>No tests run yet.</em>';
 }
 
+// ---------- diagnosis & treatment ----------
 function submitDiagnosis() {
-  const selected = DOM.diagnosisSelect.value;
+  const select = DOM.diagnosisSelect;
+  if(!select){ showFeedback('Diagnosis UI not found.', 'bad'); return; }
+  const selected = select.value;
   const c = state.current;
-  if(!c){ log("No patient to diagnose."); return; }
-  if(!selected){ log("Select a diagnosis from the dropdown."); return; }
+  if(!c){ log("No patient to diagnose."); showFeedback('No patient to diagnose.', 'bad'); return; }
+  if(!selected){ log("Select a diagnosis from the dropdown."); showFeedback('Please select a diagnosis before submitting.', 'bad'); return; }
 
-  const disease = state.diseases.find(d=>d.id===selected);
-  const correct = selected === c.disease.id;
+  try {
+    const disease = state.diseases.find(d=>d.id===selected);
+    const correct = selected === c.disease.id;
 
-  if(correct){
-    // reward depends on treatment reward and how many tests used (fewer tests = bonus)
-    const base = disease.treatment.reward;
-    const testsUsed = Object.keys(c.testsRun).length;
-    const efficiencyBonus = Math.max(0, Math.round((3 - testsUsed) * 5)); // prefer fewer tests
-    const moneyEarned = base + efficiencyBonus;
-    state.money += moneyEarned;
-    state.reputation = Math.min(100, state.reputation + 5);
-    DOM.feedback.className = 'feedback good';
-    DOM.feedback.innerHTML = `<strong>Correct!</strong> Treatment: ${disease.treatment.name}. You earned $${moneyEarned} and +5 reputation.`;
-    // Offer treatment options (simulate different choices)
-    DOM.treatmentOptions.innerHTML = '';
-    const treatBtn = document.createElement('button');
-    treatBtn.textContent = `Provide treatment (${disease.treatment.name})`;
-    treatBtn.addEventListener('click', ()=>{
-      finishTreatment(true);
-    });
-    DOM.treatmentOptions.appendChild(treatBtn);
-    log(`Diagnosed ${c.petName} with ${disease.name} (correct).`);
-  } else {
-    // penalty
-    const penalty = 15;
-    state.money = Math.max(0, state.money - penalty);
-    state.reputation = Math.max(0, state.reputation - 8);
-    DOM.feedback.className = 'feedback bad';
-    const actual = c.disease.name;
-    DOM.feedback.innerHTML = `<strong>Incorrect diagnosis.</strong> Actual: ${actual}. You lost $${penalty} and -8 reputation.`;
-    // Allow to treat (but lesser reward)
-    DOM.treatmentOptions.innerHTML = '';
-    const fixBtn = document.createElement('button');
-    fixBtn.textContent = `Treat for ${actual} (accept)`;
-    fixBtn.addEventListener('click', ()=>{
-      finishTreatment(false);
-    });
-    DOM.treatmentOptions.appendChild(fixBtn);
-    log(`Diagnosed ${c.petName} incorrectly as ${disease ? disease.name : selected}.`);
+    if(correct){
+      const base = disease.treatment.reward;
+      const testsUsed = Object.keys(c.testsRun).length;
+      const efficiencyBonus = Math.max(0, Math.round((3 - testsUsed) * 5));
+      const moneyEarned = base + efficiencyBonus;
+      state.money += moneyEarned;
+      state.reputation = Math.min(100, state.reputation + 5);
+      DOM.feedback.className = 'feedback good';
+      DOM.feedback.innerHTML = `<strong>Correct!</strong> Treatment: ${disease.treatment.name}. You earned $${moneyEarned} and +5 reputation.`;
+      DOM.treatmentOptions.innerHTML = '';
+      const treatBtn = document.createElement('button');
+      treatBtn.textContent = `Provide treatment (${disease.treatment.name})`;
+      treatBtn.addEventListener('click', ()=>{
+        finishTreatment(true);
+      });
+      DOM.treatmentOptions.appendChild(treatBtn);
+      log(`Diagnosed ${c.petName} with ${disease.name} (correct).`);
+    } else {
+      const penalty = 15;
+      state.money = Math.max(0, state.money - penalty);
+      state.reputation = Math.max(0, state.reputation - 8);
+      DOM.feedback.className = 'feedback bad';
+      const actual = c.disease.name;
+      DOM.feedback.innerHTML = `<strong>Incorrect diagnosis.</strong> Actual: ${actual}. You lost $${penalty} and -8 reputation.`;
+      DOM.treatmentOptions.innerHTML = '';
+      const fixBtn = document.createElement('button');
+      fixBtn.textContent = `Treat for ${actual} (accept)`;
+      fixBtn.addEventListener('click', ()=>{
+        finishTreatment(false);
+      });
+      DOM.treatmentOptions.appendChild(fixBtn);
+      log(`Diagnosed ${c.petName} incorrectly as ${disease ? disease.name : selected}.`);
+    }
+    updateHUD();
+  } catch (err) {
+    console.error('Exception in submitDiagnosis:', err);
+    showFeedback('An error occurred when submitting the diagnosis.', 'bad');
   }
-  updateHUD();
 }
 
 function finishTreatment(correct) {
@@ -346,26 +394,25 @@ function finishTreatment(correct) {
   } else {
     log(`Treatment given after incorrect diagnosis. Outcome mixed.`);
   }
-  // Remove current patient and seed new
   state.current = null;
-  // Occasionally generate random new customers
   state.waiting.push(generateCustomer());
   renderWaiting();
   renderCurrent();
 }
 
 function updateHUD() {
-  DOM.money.textContent = `$${state.money}`;
-  DOM.reputation.textContent = `Reputation: ${state.reputation}`;
+  if(DOM.money) DOM.money.textContent = `$${state.money}`;
+  if(DOM.reputation) DOM.reputation.textContent = `Reputation: ${state.reputation}`;
 }
 
 function log(text) {
+  if(!DOM.logList) return;
   const p = document.createElement('p');
   p.textContent = `[${new Date().toLocaleTimeString()}] ${text}`;
   DOM.logList.prepend(p);
 }
 
-// Utilities
+// ---------- utilities ----------
 function rand(min, max) {
   return Math.floor(Math.random()*(max-min+1))+min;
 }
