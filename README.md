@@ -18,12 +18,4 @@ Gameplay overview:
 - Incorrect diagnoses may cost reputation and money.
 - Keep an eye on money and reputation.
 
-If you want additional features, tell me which you'd like:
-- More diseases/pets
-- A persistent save system
-- Levels/difficulty or timed mode
-- Visuals/animations or sound
-- Multiplayer/leaderboards
-
-Enjoy!
 ```
