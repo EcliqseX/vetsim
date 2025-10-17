@@ -18,7 +18,7 @@ body{
 
 header{
   background:linear-gradient(90deg,#fff,#f8fafc);
-  padding:16px 24px;
+  padding:12px 18px;
   display:flex;
   justify-content:space-between;
   align-items:center;
@@ -26,29 +26,33 @@ header{
 }
 
 header h1{margin:0;font-size:1.25rem}
-.status{display:flex;gap:12px;align-items:center}
+.status{display:flex;gap:10px;align-items:center}
 .status span{background:var(--card);padding:8px 12px;border-radius:8px;border:1px solid #e6eef8}
-.status button{padding:8px 12px;background:var(--accent);color:white;border:none;border-radius:8px;cursor:pointer}
+.status button{padding:8px 10px;background:var(--accent);color:white;border:none;border-radius:8px;cursor:pointer}
 
-main{flex:1;display:flex;gap:16px;padding:20px;align-items:flex-start}
-.waiting{width:220px}
+main{flex:1;display:flex;gap:16px;padding:18px;align-items:flex-start}
+.waiting{width:260px}
 .waiting h2{margin-top:0}
 .waiting ul{list-style:none;padding:0}
 .waiting li{background:var(--card);padding:8px;border-radius:8px;margin-bottom:8px;border:1px solid #e6eef8}
 
-.clinic{flex:1;display:grid;grid-template-columns:1fr 300px;gap:16px}
+.dictionary{margin-top:12px;padding:10px}
+.dictionary h3{margin:0 0 8px 0}
+.dictionary .dict-item{margin-bottom:6px;padding:6px;border-radius:6px;background:#fbfdff;border:1px solid #e6eef8;font-size:0.95rem}
+
+.clinic{flex:1;display:grid;grid-template-columns:1fr 320px;gap:16px}
 .card{background:var(--card);padding:16px;border-radius:10px;border:1px solid #e6eef8}
 #symptomList{margin:0 0 12px 16px}
 .test-buttons{display:flex;flex-wrap:wrap;gap:8px}
 .test-buttons button{padding:6px 8px;border-radius:8px;border:1px solid #e6eef8;background:#fafbff;cursor:pointer}
-.test-buttons button:disabled{opacity:.4;cursor:default}
-#testResults{margin-top:12px;padding:8px;background:#f8fcff;border-radius:8px;border:1px dashed #dbeefe;min-height:36px}
+.test-buttons button:disabled{opacity:.45;cursor:not-allowed}
+#testResults{margin-top:12px;padding:8px;background:#f8fcff;border-radius:8px;border:1px dashed #dbeefe;min-height:40px}
 .diagnosis select{padding:8px;border-radius:8px;border:1px solid #e6eef8}
 .diagnosis button{margin-left:8px;padding:8px 12px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer}
 
 .treatment{margin-top:12px}
 #treatmentOptions button{padding:8px 10px;margin-right:8px;border-radius:8px;background:#f3f6ff;border:1px solid #e6eef8;cursor:pointer}
-.feedback{margin-top:12px;padding:10px;border-radius:8px;min-height:40px}
+.feedback{margin-top:12px;padding:10px;border-radius:8px;min-height:50px}
 .feedback.good{background:#ecfdf5;border:1px solid #a7f3d0}
 .feedback.bad{background:#fff1f2;border:1px solid #fecaca}
 
