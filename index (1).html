@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Vet Clinic Simulator</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>Vet Clinic Simulator</h1>
+    <div class="status">
+      <span id="money">$100</span>
+      <span id="reputation">Reputation: 50</span>
+      <button id="nextBtn">Next Customer</button>
+    </div>
+  </header>
+
+  <main>
+    <aside class="waiting">
+      <h2>Waiting Room</h2>
+      <ul id="waitingList"></ul>
+    </aside>
+
+    <section class="clinic">
+      <div id="customerCard" class="card">
+        <h2 id="custName">No customer</h2>
+        <p id="petInfo"></p>
+        <div id="symptomArea">
+          <h3>Observed symptoms:</h3>
+          <ul id="symptomList"></ul>
+        </div>
+
+        <div class="tests">
+          <h3>Available tests</h3>
+          <div class="test-buttons">
+            <button data-test="blood" class="testBtn">Blood Test ($20)</button>
+            <button data-test="stool" class="testBtn">Stool Test ($15)</button>
+            <button data-test="skin" class="testBtn">Skin Scrape ($12)</button>
+            <button data-test="xray" class="testBtn">X-Ray ($30)</button>
+            <button data-test="flea" class="testBtn">Flea Check ($5)</button>
+          </div>
+          <div id="testResults"></div>
+        </div>
+
+        <div class="diagnosis">
+          <h3>Make a diagnosis</h3>
+          <select id="diagnosisSelect">
+            <option value="">-- Select diagnosis --</option>
+          </select>
+          <button id="diagnoseBtn">Submit Diagnosis</button>
+        </div>
+
+        <div id="treatmentArea" class="treatment">
+          <h3>Treatment</h3>
+          <div id="treatmentOptions"></div>
+        </div>
+
+        <div id="feedback" class="feedback"></div>
+      </div>
+
+      <aside class="log card">
+        <h3>Clinic Log</h3>
+        <div id="logList"></div>
+      </aside>
+    </section>
+  </main>
+
+  <footer>
+    <p>Made with care — be kind to the pets 🐾</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
